@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import QueryLogView from '@/views/QueryLogView.vue'
 import Home from '../views/Home.vue'
 
 const routes = [
@@ -6,6 +7,11 @@ const routes = [
     path: '/',
     name: 'Home',
     component: Home
+  },
+    {
+    path: '/querylogs',
+    name: 'QueryLogs',
+    component: QueryLogView
   }
 ]
 
