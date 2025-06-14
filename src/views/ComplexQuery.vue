@@ -8,12 +8,12 @@
               <div class="option-input-container">
                 <p>起始时间</p>
                 <el-date-picker v-model="startDate" type="datetime" placeholder="请选择起始时间" value-format="x" 
-                style="width: 370px; height: 40px;"/>
+                style="width: 100%; height: 40px;"/>
               </div>
               <div class="option-input-container">
                 <p>结束时间</p>
                 <el-date-picker v-model="endDate" type="datetime" placeholder="请选择结束时间" value-format="x" 
-                style="width: 370px; height: 40px;"/>
+                style="width: 100%; height: 40px;"/>
               </div>
               <div class="option-input-container">
                 <p>新闻主题</p>

@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import QueryLogView from '@/views/QueryLogView.vue'
 import Home from '../views/Home.vue'
-import NewsLifecycleView from '../views/NewsLifecycleView.vue'
+import NewsLifecycleView from '../views/NewsLifeCycle.vue'
 import NewsRecommendationView from '../views/NewsRecommendation.vue'
 import PopularNewsView from '../views/PopularNewsView.vue'
 import ComplexQueryView from '../views/ComplexQuery.vue'
