@@ -32,7 +32,7 @@ const chartRef = ref(null)
 let chart = null
 let socket = null
 const seenTimestamps = new Set()
-const MAX_POINTS = 120 // 最多保留120个数据点
+const MAX_POINTS = 10000000000 // 数据点数量无上限
 let resizeObserver = null
 
 // 初始化图表
@@ -200,8 +200,11 @@ const startMonitoring = async () => {
 
         socket.onopen = () => {
             console.log("✅ WebSocket已连接")
+            // 👉 在连接建立后，发送用户输入的 newsId 给后端
+            socket.send(newsId.value.toString())
             ElMessage.success('开始监控')
         }
+
 
         socket.onerror = (e) => {
             console.error("❌ WebSocket出错", e)

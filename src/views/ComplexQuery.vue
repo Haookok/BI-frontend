@@ -75,8 +75,8 @@
                   <div v-if="loading">正在发送请求...</div>
                   <div v-else-if="error" class="error">{{ error }}</div>
                   <div v-else>
-                    <div v-if="response && response.newsList && response.newsList.length">
-                      <div v-for="news in response.newsList" :key="news.newsId" class="news-item">
+                    <div v-if="response && response.records && response.records.length">
+                      <div v-for="news in response.records" :key="news.newsId" class="news-item">
                         <div class="news-title" @click="showNewsContent(news)">{{ news.headline || '无标题' }}</div>
                         <div class="news-details">
                           <span class="news-category">分类: {{ news.category || '无分类' }}</span>
@@ -206,11 +206,8 @@ const fetchData = async () => {
     const data = await res.json()
     response.value = data
     // 计算总页数
-    if (data && data.total && data.size) {
-      totalPages.value = Math.ceil(data.total / data.size)
-    } else if (data && data.page && data.size && data.newsList) {
-      // 兼容后端只返回当前页和每页数量
-      totalPages.value = data.newsList.length < data.size ? data.page : data.page + 1
+    if (data && data.total && data.pageSize) {
+      totalPages.value = Math.ceil(data.total / data.pageSize)
     }
   } catch (e) {
     error.value = e.message

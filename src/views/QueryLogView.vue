@@ -5,15 +5,22 @@
       <h1>查询日志列表</h1>
       <div class="search-bar-row">
         <el-input v-model="searchQuery" placeholder="请输入ID查询" class="search-input" size="large" />
-        <el-button type="info" @click="fetchSortedLogs" class="sort-button" size="large">按执行时间排序</el-button>
+        <el-button 
+          :type="isSortedByTime ? 'success' : 'primary'" 
+          @click="toggleSort" 
+          class="sort-button" 
+          size="large"
+        >
+          {{ isSortedByTime ? '恢复正常顺序' : '按执行时间排序' }}
+        </el-button>
       </div>
     
       <div v-if="isLoading" class="flex justify-center py-10">
         <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
       <el-table
-        v-else-if="filteredLogs.length > 0"
-        :data="filteredLogs"
+        v-else-if="logs.length > 0"
+        :data="logs"
         stripe
         class="element-table"
       >
@@ -57,6 +64,19 @@
           刷新页面
         </button>
       </div>
+
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -71,6 +91,10 @@ import { ElProgress } from 'element-plus';
 const logs = ref([]);
 const searchQuery = ref('');
 const isLoading = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+const isSortedByTime = ref(false);
 
 const filteredLogs = computed(() => {
   if (!searchQuery.value.trim()) return logs.value;
@@ -84,9 +108,15 @@ const filteredLogs = computed(() => {
 const fetchLogs = async () => {
   isLoading.value = true;
   try {
-    const res = await axios.get('http://localhost:8080/api/querylogs');
-    if (Array.isArray(res.data)) {
-      logs.value = res.data.map(item => ({
+    const res = await axios.get(`http://localhost:8080/api/querylogs/logs`, {
+      params: {
+        page: currentPage.value,
+        size: pageSize.value
+      }
+    });
+    
+    if (res.data && res.data.records) {
+      logs.value = res.data.records.map(item => ({
         ...item,
         createdAt: new Date(item.createdAt).toLocaleString('zh-CN', {
           year: 'numeric',
@@ -97,9 +127,11 @@ const fetchLogs = async () => {
           second: '2-digit'
         })
       }));
+      total.value = res.data.total;
     } else {
-      console.error('API返回的数据不是数组:', res.data);
+      console.error('API返回的数据格式不正确:', res.data);
       logs.value = [];
+      total.value = 0;
     }
   } catch (error) {
     console.error('获取日志失败:', error);
@@ -112,9 +144,15 @@ const fetchLogs = async () => {
 const fetchSortedLogs = async () => {
   isLoading.value = true;
   try {
-    const res = await axios.get('http://localhost:8080/api/querylogs/sorted-by-execution-time');
-    if (Array.isArray(res.data)) {
-      logs.value = res.data.map(item => ({
+    const res = await axios.get(`http://localhost:8080/api/querylogs/sorted-by-execution-time`, {
+      params: {
+        page: currentPage.value,
+        size: pageSize.value
+      }
+    });
+    
+    if (res.data && res.data.records) {
+      logs.value = res.data.records.map(item => ({
         ...item,
         createdAt: new Date(item.createdAt).toLocaleString('zh-CN', {
           year: 'numeric',
@@ -125,9 +163,11 @@ const fetchSortedLogs = async () => {
           second: '2-digit'
         })
       }));
+      total.value = res.data.total;
     } else {
-      console.error('API返回的数据不是数组:', res.data);
+      console.error('API返回的数据格式不正确:', res.data);
       logs.value = [];
+      total.value = 0;
     }
   } catch (error) {
     console.error('获取排序日志失败:', error);
@@ -135,6 +175,25 @@ const fetchSortedLogs = async () => {
   } finally {
     isLoading.value = false;
   }
+};
+
+const toggleSort = () => {
+  isSortedByTime.value = !isSortedByTime.value;
+  if (isSortedByTime.value) {
+    fetchSortedLogs();
+  } else {
+    fetchLogs();
+  }
+};
+
+const handleSizeChange = (val) => {
+  pageSize.value = val;
+  fetchLogs();
+};
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val;
+  fetchLogs();
 };
 
 onMounted(() => {
@@ -159,6 +218,7 @@ onMounted(() => {
 .element-table {
   width: 100%;
   background: #fff;
+  margin-bottom: 20px;
 }
 
 .progress-bar {
@@ -186,5 +246,11 @@ onMounted(() => {
   margin-left: 0.5vw;
   margin-bottom: 1vw;
   margin-top: 0.5vw;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 </style>

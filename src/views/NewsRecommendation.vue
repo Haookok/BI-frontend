@@ -8,7 +8,7 @@
                     <div class="option-input-container">
                         <p>当前新闻ID</p>
                         <el-input v-model="currentNewsId" placeholder="请输入新闻ID" class="option-input"
-                        type="number" id="newsId" value="1" />
+                        type="number" id="newsId" />
                     </div>
                     <div class="option-input-container">
                         <p>用户ID</p>
@@ -18,7 +18,7 @@
                     <div class="option-input-container">
                         <p>时间选择</p>
                         <el-date-picker v-model="timestamp" type="datetime" placeholder="请选择时间" value-format="x" 
-                        style="width: 370px; height: 40px;"/>
+                        style="width: 100%; height: 40px;"/>
                     </div>
                     <el-button type="primary" class="option-btn" @click="sendRequest  ">查询</el-button>
                 </div>
@@ -50,7 +50,7 @@ import Sidebar from '@/components/Sidebar.vue'
 import { ref } from 'vue'
 
 const url = ref('http://localhost:8080/api/recommendations')
-const newsId = ref(1)
+const currentNewsId = ref('')
 const userId = ref(1001)
 const timestamp = ref(0)
 
@@ -67,7 +67,7 @@ const sendRequest = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        newsId: newsId.value,
+        newsId: parseInt(currentNewsId.value),
         userId: userId.value,
         timestamp: Math.floor(timestamp.value / 1000)
       })
