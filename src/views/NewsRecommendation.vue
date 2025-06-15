@@ -13,14 +13,14 @@
                     <div class="option-input-container">
                         <p>用户ID</p>
                         <el-input v-model="userId" placeholder="请输入用户ID" class="option-input"
-                        type="number" id="userId" value="1001" />
+                        type="number" id="userId" />
                     </div>
                     <div class="option-input-container">
                         <p>时间选择</p>
                         <el-date-picker v-model="timestamp" type="datetime" placeholder="请选择时间" value-format="x" 
                         style="width: 100%; height: 40px;"/>
                     </div>
-                    <el-button type="primary" class="option-btn" @click="sendRequest  ">查询</el-button>
+                    <el-button type="primary" class="option-btn" @click="sendRequest">查询</el-button>
                 </div>
 
                 <div class="response-container">
@@ -29,9 +29,15 @@
                   <div v-else-if="error" class="error">{{ error }}</div>
                   <div v-else>
                     <div v-if="Array.isArray(response) && response.length">
-                      <div v-for="news in response" :key="news.id" class="news-item">
-                        <div class="news-title">{{ news.headline || '无标题' }}</div>
-                        <div class="news-category">分类: {{ news.category || '无分类' }}</div>
+                      <div v-for="news in response" :key="news.newsId" class="news-item">
+                        <div class="news-title" @click="showNewsContent(news)">{{ news.headline || '无标题' }}</div>
+                        <div class="news-details">
+                          <span class="news-category">分类: {{ news.category || '无分类' }}</span>
+                          <span class="news-topic">主题: {{ news.topic || '-' }}</span>
+                          <span class="news-id">ID: {{ news.newsId }}</span>
+                          <span class="news-browse">浏览次数: {{ news.totalBrowseNum }}</span>
+                          <span class="news-duration">浏览时长: {{ news.totalBrowseDuration }}s</span>
+                        </div>
                       </div>
                     </div>
                     <div v-else>
@@ -40,6 +46,33 @@
                   </div>
                 </div>
 
+                <!-- 添加新闻内容弹窗 -->
+                <el-dialog
+                  v-model="dialogVisible"
+                  :title="'新闻详情'"
+                  width="80%"
+                  class="news-dialog"
+                >
+                  <div class="news-detail-container">
+                    <h2 class="news-detail-title">{{ selectedNews?.headline || '无标题' }}</h2>
+                    <div class="news-detail-meta">
+                      <div class="meta-group">
+                        <span class="meta-label">基本信息</span>
+                        <span>ID: {{ selectedNews?.newsId }}</span>
+                        <span>分类: {{ selectedNews?.category || '无分类' }}</span>
+                        <span>主题: {{ selectedNews?.topic || '-' }}</span>
+                      </div>
+                      <div class="meta-group">
+                        <span class="meta-label">浏览数据</span>
+                        <span>总浏览量: {{ selectedNews?.totalBrowseNum || 0 }}</span>
+                        <span>总浏览时长: {{ selectedNews?.totalBrowseDuration || 0 }}s</span>
+                      </div>
+                    </div>
+                    <div class="news-detail-content">
+                      {{ selectedNews?.content || '暂无内容' }}
+                    </div>
+                  </div>
+                </el-dialog>
             </div>
         </div>
     </div>
@@ -51,12 +84,22 @@ import { ref } from 'vue'
 
 const url = ref('http://localhost:8080/api/recommendations')
 const currentNewsId = ref('')
-const userId = ref(1001)
+const userId = ref('')
 const timestamp = ref(0)
 
 const response = ref(null)
 const error = ref('')
 const loading = ref(false)
+
+// 添加弹窗相关的状态
+const dialogVisible = ref(false)
+const selectedNews = ref(null)
+
+// 添加显示新闻内容的方法
+const showNewsContent = (news) => {
+  selectedNews.value = news
+  dialogVisible.value = true
+}
 
 const sendRequest = async () => {
   error.value = ''
@@ -155,8 +198,23 @@ const sendRequest = async () => {
 }
 .news-title {
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   color: #333;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.news-title:hover {
+  color: #409EFF;
+}
+.news-details {
+  display: flex;
+  gap: 20px;
+  color: #666;
+  font-size: 0.9em;
+}
+.news-details span {
+  white-space: nowrap;
 }
 .news-category {
   color: #666;
@@ -166,5 +224,92 @@ const sendRequest = async () => {
   color: red;
   font-weight: bold;
   margin-top: 10px;
+}
+
+/* 弹窗样式 */
+:deep(.el-dialog) {
+  margin-top: 5vh !important;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+:deep(.el-dialog__header) {
+  padding: 20px;
+  margin: 0;
+  border-bottom: 1px solid #eee;
+}
+
+:deep(.el-dialog__body) {
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(90vh - 60px);
+}
+
+.news-detail-container {
+  padding: 20px;
+  height: 100%;
+}
+
+.news-detail-title {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.news-detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.meta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.meta-group:last-child {
+  border-bottom: none;
+}
+
+.meta-label {
+  font-weight: bold;
+  color: #409EFF;
+  min-width: 80px;
+}
+
+.news-detail-content {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  font-size: 1.1em;
+  color: #333;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+/* 确保弹窗在页面最上层 */
+:deep(.el-overlay) {
+  z-index: 2000;
+}
+
+:deep(.el-dialog__wrapper) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 </style>

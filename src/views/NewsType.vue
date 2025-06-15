@@ -47,17 +47,38 @@ function fillMissingMinuteTimestamps(tsList) {
 }
 
 let option = {
-  title: { text: '新闻分类每分钟点击趋势' },
+  title: { 
+    text: '新闻分类每分钟点击趋势',
+    top: 10,
+    left: 'center'
+  },
   tooltip: { trigger: 'axis' },
-  legend: { data: [], type: 'scroll' },
+  legend: { 
+    data: [], 
+    type: 'scroll',
+    top: 40
+  },
+  grid: {
+    top: 80,
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
   xAxis: {
-    type: 'category',
-    data: [],
-    name: '时间（分钟）',
+    type: 'time',
+    name: '时间',
+    min: 'dataMin',
+    max: 'dataMax',
     axisLabel: {
-      formatter(value) {
-        const date = new Date(value * 1000)
-        return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+      formatter: value => {
+        const date = new Date(value)
+        const yyyy = date.getFullYear()
+        const mm = String(date.getMonth() + 1).padStart(2, '0')
+        const dd = String(date.getDate()).padStart(2, '0')
+        const hh = String(date.getHours()).padStart(2, '0')
+        const min = String(date.getMinutes()).padStart(2, '0')
+        return `${yyyy}-${mm}-${dd} ${hh}:${min}`
       }
     }
   },
@@ -80,12 +101,12 @@ function updateChart() {
   }))
 
   const dataBatch = bufferedData.splice(0, bufferedData.length)
-  const incomingTimestamps = dataBatch.map(d => d.timestamp)
-  incomingTimestamps.forEach(ts => timeIndexSet.add(ts))
-
+  
+  // 更新时间戳集合
+  dataBatch.forEach(d => timeIndexSet.add(d.timestamp))
   let fullTimestamps = fillMissingMinuteTimestamps([...timeIndexSet])
-  option.xAxis.data = fullTimestamps
 
+  // 更新每个分类的数据
   for (const category in categorySeriesMap) {
     const series = categorySeriesMap[category]
     const diff = fullTimestamps.length - series.data.length
@@ -96,26 +117,26 @@ function updateChart() {
     }
   }
 
+  // 批量更新数据
   dataBatch.forEach(item => {
-    const ts = item.timestamp
-    const category = item.category || '未知'
-    const count = item.count || 0
-
-    if (!categorySeriesMap[category]) {
-      categorySeriesMap[category] = {
-        name: category,
-        type: 'line',
-        large: true,
-        data: Array(fullTimestamps.length).fill(0),
-        showSymbol: false
-      }
-      option.series.push(categorySeriesMap[category])
-      option.legend.data.push(category)
-    }
-
-    const index = fullTimestamps.indexOf(ts)
+    const { timestamp, categories } = item
+    const index = fullTimestamps.indexOf(timestamp)
+    
     if (index !== -1) {
-      categorySeriesMap[category].data[index] = count
+      Object.entries(categories).forEach(([category, count]) => {
+        if (!categorySeriesMap[category]) {
+          categorySeriesMap[category] = {
+            name: category,
+            type: 'line',
+            large: true,
+            data: fullTimestamps.map(ts => [ts * 1000, 0]),
+            showSymbol: false
+          }
+          option.series.push(categorySeriesMap[category])
+          option.legend.data.push(category)
+        }
+        categorySeriesMap[category].data[index] = [timestamp * 1000, count]
+      })
     }
   })
 
@@ -125,6 +146,12 @@ function updateChart() {
       option.dataZoom[i].start = currentDataZoom[i]?.start ?? option.dataZoom[i].start
       option.dataZoom[i].end = currentDataZoom[i]?.end ?? option.dataZoom[i].end
     }
+  }
+
+  // 更新时间轴范围
+  if (fullTimestamps.length > 0) {
+    option.xAxis.min = fullTimestamps[0] * 1000
+    option.xAxis.max = fullTimestamps[fullTimestamps.length - 1] * 1000
   }
 
   chart.setOption(option, { notMerge: false })
@@ -141,14 +168,42 @@ onMounted(() => {
 
   socket = new WebSocket('ws://localhost:8080/ws/minute-category-stats')
 
+
   socket.onmessage = event => {
     try {
       const data = JSON.parse(event.data)
-      if (Array.isArray(data)) {
-        bufferedData.push(...data)
+      if (!data || !Array.isArray(data)) {
+        console.warn('数据格式不正确')
+        return
+      }
+
+      // 使用Map来优化数据处理
+      const timestampMap = new Map()
+      
+      // 按时间戳分组数据
+      data.forEach(item => {
+        if (item && typeof item === 'object' && 
+            typeof item.timestamp === 'number' &&
+            typeof item.category === 'string' &&
+            typeof item.count === 'number') {
+          
+          const { timestamp, category, count } = item
+          if (!timestampMap.has(timestamp)) {
+            timestampMap.set(timestamp, new Map())
+          }
+          timestampMap.get(timestamp).set(category, count)
+        }
+      })
+
+      // 将处理后的数据添加到缓冲区
+      if (timestampMap.size > 0) {
+        bufferedData.push(...Array.from(timestampMap.entries()).map(([timestamp, categoryMap]) => ({
+          timestamp,
+          categories: Object.fromEntries(categoryMap)
+        })))
       }
     } catch (e) {
-      console.error('解析数据失败', e)
+      console.error('解析数据失败:', e)
     }
   }
 

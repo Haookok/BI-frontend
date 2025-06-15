@@ -17,7 +17,13 @@
               </div>
               <div class="option-input-container">
                 <p>新闻主题</p>
-                <el-input v-model="newsTitle" placeholder="请输入新闻主题" class="option-input" type="text" id="newsTitle" />
+                <el-autocomplete
+                  v-model="newsTitle"
+                  :fetch-suggestions="querySearch"
+                  placeholder="请输入或选择新闻主题"
+                  class="option-input"
+                  clearable
+                />
               </div>
               <div class="option-input-container">
                 <p>用户ID</p>
@@ -123,7 +129,7 @@
 
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Minus, Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 
 const userIds = ref(['']) // 初始只有一个输入框
@@ -133,6 +139,7 @@ const totalPages = ref(1)
 const response = ref(null)
 const error = ref('')
 const loading = ref(false)
+const newsCategories = ref([]) // 添加新闻分类数组
 
 const startDate = ref('')
 const endDate = ref('')
@@ -141,6 +148,25 @@ const minTitleLength = ref('')
 const maxTitleLength = ref('')
 const minContentLength = ref('')
 const maxContentLength = ref('')
+
+// 获取新闻分类数据
+const fetchNewsCategories = async () => {
+  try {
+    const res = await fetch('http://localhost:8080/api/news-fields/topics')
+    if (!res.ok) throw new Error(`HTTP错误! 状态码: ${res.status}`)
+    const data = await res.json()
+    if (data && data.values) {
+      newsCategories.value = data.values
+    }
+  } catch (error) {
+    console.error('获取新闻主题失败:', error)
+  }
+}
+
+// 在组件挂载时获取新闻分类
+onMounted(() => {
+  fetchNewsCategories()
+})
 
 // 添加一个用户ID输入框
 const addUserId = () => {
@@ -224,6 +250,22 @@ const selectedNews = ref(null)
 const showNewsContent = (news) => {
   selectedNews.value = news
   dialogVisible.value = true
+}
+
+// 添加自动补全的查询函数
+const querySearch = (queryString, callback) => {
+  const results = queryString
+    ? newsCategories.value.filter(item => 
+        item.toLowerCase().includes(queryString.toLowerCase())
+      )
+    : newsCategories.value
+  
+  // 将结果转换为el-autocomplete需要的格式
+  const formattedResults = results.map(item => ({
+    value: item
+  }))
+  
+  callback(formattedResults)
 }
 </script>
 
@@ -395,5 +437,18 @@ const showNewsContent = (news) => {
   display: flex;
   align-items: flex-start;
   justify-content: center;
+}
+
+/* 统一输入框高度 */
+:deep(.el-autocomplete) {
+  width: 100%;
+}
+
+:deep(.el-autocomplete .el-input__wrapper) {
+  height: 45px;
+}
+
+:deep(.el-autocomplete .el-input__inner) {
+  height: 40px;
 }
 </style>

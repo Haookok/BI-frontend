@@ -188,12 +188,20 @@ const toggleSort = () => {
 
 const handleSizeChange = (val) => {
   pageSize.value = val;
-  fetchLogs();
+  if (isSortedByTime.value) {
+    fetchSortedLogs();
+  } else {
+    fetchLogs();
+  }
 };
 
 const handleCurrentChange = (val) => {
   currentPage.value = val;
-  fetchLogs();
+  if (isSortedByTime.value) {
+    fetchSortedLogs();
+  } else {
+    fetchLogs();
+  }
 };
 
 onMounted(() => {

@@ -9,7 +9,7 @@
                     <div class="options-panel">
                         <div class="option-input-container">
                             <p>查询时间</p>
-                            <el-date-picker v-model="value1" type="date" 
+                            <el-date-picker v-model="comprehensiveDate" type="date" 
                               format="YYYY/MM/DD"
                               value-format="YYYY-MM-DD"
                               placeholder="选择截止时间" 
@@ -39,7 +39,7 @@
                             <p>新闻ID</p>
                             <el-input v-model="newsId" placeholder="请输入新闻ID" style="width: 200px; height: 40px; margin-left: 16px; margin-right: 16px; " />
                             <p>查询时间</p>
-                            <el-date-picker v-model="value1" type="datetime" 
+                            <el-date-picker v-model="trendDate" type="datetime" 
                               format="YYYY/MM/DD HH:mm:ss"
                               value-format="YYYY-MM-DD HH:mm:ss"
                               placeholder="选择截止时间" 
@@ -66,13 +66,24 @@
     <div class="news-detail-container">
         <h2 class="news-detail-title">{{ selectedNews?.headline || '无标题' }}</h2>
         <div class="news-detail-meta">
-            <span>分类: {{ selectedNews?.category || '无分类' }}</span>
-            <span>ID: {{ selectedNews?.newsId }}</span>
-            <span>总浏览量: {{ selectedNews?.totalBrowseCount }}</span>
-            <span>总浏览时长: {{ selectedNews?.totalDuration }}s</span>
-            <span>平均浏览时长: {{ selectedNews?.avgBrowseDuration ? selectedNews.avgBrowseDuration.toFixed(2) : '-' }}s</span>
-            <span>增长率: {{ selectedNews?.growthRate ?? '-' }}</span>
-            <span>综合热度: {{ selectedNews?.comprehensiveHeat ? selectedNews.comprehensiveHeat.toFixed(2) : '-' }}</span>
+            <div class="meta-group">
+                <span class="meta-label">基本信息</span>
+                <span>ID: {{ selectedNews?.newsId }}</span>
+                <span>分类: {{ selectedNews?.category || '无分类' }}</span>
+                <span>主题: {{ selectedNews?.topic || '-' }}</span>
+            </div>
+            <div class="meta-group">
+                <span class="meta-label">浏览数据</span>
+                <span>总浏览量: {{ selectedNews?.totalBrowseCount || 0 }}</span>
+                <span>总浏览时长: {{ selectedNews?.totalDuration || 0 }}s</span>
+                <span>平均浏览时长: {{ selectedNews?.avgBrowseDuration ? selectedNews.avgBrowseDuration.toFixed(2) : '-' }}s</span>
+            </div>
+            <div class="meta-group">
+                <span class="meta-label">热度数据</span>
+                <span>日热度: {{ selectedNews?.dailyHeat ? selectedNews.dailyHeat.toFixed(2) : '-' }}</span>
+                <span>增长率: {{ selectedNews?.growthRate ? (selectedNews.growthRate * 100).toFixed(2) + '%' : '-' }}</span>
+                <span>综合热度: {{ selectedNews?.comprehensiveHeat ? selectedNews.comprehensiveHeat.toFixed(2) : '-' }}</span>
+            </div>
         </div>
         <div class="news-detail-content">
             {{ selectedNews?.content || '暂无内容' }}
@@ -88,7 +99,8 @@ import axios from 'axios'
 import * as echarts from 'echarts'
 
 const activeName = ref('first')
-const value1 = ref('')
+const comprehensiveDate = ref('')  // 综合热度查询的日期
+const trendDate = ref('')          // 趋势分析查询的日期
 const newsId = ref('')
 const newsList = ref([])
 const trendData = ref([])
@@ -100,8 +112,8 @@ let trendChartInstance = null
 const fetchData = async () => {
   try {
     const params = {}
-    if (value1.value) {
-      const date = new Date(value1.value)
+    if (comprehensiveDate.value) {
+      const date = new Date(comprehensiveDate.value)
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
@@ -113,7 +125,23 @@ const fetchData = async () => {
       timeout: 5000
     })
     console.log('后端返回数据:', res.data)
-    newsList.value = Array.isArray(res.data) ? res.data : []
+    // 处理新的数据结构
+    if (res.data && res.data.hotNewsList) {
+      newsList.value = res.data.hotNewsList.map(item => ({
+        newsId: item.news.newsId,
+        headline: item.news.headline,
+        content: item.news.content,
+        category: item.news.category,
+        topic: item.news.topic,
+        totalBrowseCount: item.news.totalBrowseNum,
+        totalDuration: item.news.totalBrowseDuration,
+        dailyHeat: item.dailyHeat,
+        growthRate: item.growthRate,
+        comprehensiveHeat: item.comprehensiveHeat
+      }))
+    } else {
+      newsList.value = []
+    }
   } catch (error) {
     newsList.value = []
     if (error.code === 'ERR_NETWORK') {
@@ -127,12 +155,12 @@ const fetchData = async () => {
 }
 
 const fetchTrendData = async () => {
-  if (!newsId.value || !value1.value) {
+  if (!newsId.value || !trendDate.value) {
     alert('请输入新闻ID并选择日期')
     return
   }
   try {
-    const date = new Date(value1.value)
+    const date = new Date(trendDate.value)
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
@@ -192,8 +220,11 @@ function renderTrendChart() {
       return
     }
 
+    // 处理数据，补充缺失的日期
+    const processedData = processTrendData(trendData.value)
+    
     // 确保数据格式正确
-    const xData = trendData.value.map(item => {
+    const xData = processedData.map(item => {
       // 如果日期是时间戳，转换为日期字符串
       if (typeof item.date === 'number') {
         const date = new Date(item.date)
@@ -202,7 +233,7 @@ function renderTrendChart() {
       return item.date
     })
     
-    const yData = trendData.value.map(item => {
+    const yData = processedData.map(item => {
       // 使用 dailyHeat 字段
       const heat = parseFloat(item.dailyHeat)
       return isNaN(heat) ? 0 : heat
@@ -300,6 +331,48 @@ function renderTrendChart() {
   } catch (error) {
     console.error('渲染图表失败:', error)
   }
+}
+
+// 添加数据处理函数
+function processTrendData(data) {
+  if (!data.length) return []
+
+  // 将日期字符串转换为时间戳，用于排序和比较
+  const sortedData = data.map(item => ({
+    ...item,
+    timestamp: typeof item.date === 'number' ? item.date : new Date(item.date).getTime()
+  })).sort((a, b) => a.timestamp - b.timestamp)
+
+  const result = []
+  const startDate = new Date(sortedData[0].timestamp)
+  // 使用查询时间作为结束时间
+  const endDate = new Date(trendDate.value)
+
+  // 遍历日期范围，补充缺失的日期
+  for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+    const currentTimestamp = date.getTime()
+    const existingData = sortedData.find(item => {
+      const itemDate = new Date(item.timestamp)
+      return itemDate.getFullYear() === date.getFullYear() &&
+             itemDate.getMonth() === date.getMonth() &&
+             itemDate.getDate() === date.getDate()
+    })
+
+    if (existingData) {
+      result.push(existingData)
+    } else {
+      // 补充缺失的日期数据
+      result.push({
+        date: date.toISOString().split('T')[0],
+        timestamp: currentTimestamp,
+        dailyHeat: 0,
+        comprehensiveHeat: 0,
+        growthRate: 0
+      })
+    }
+  }
+
+  return result
 }
 
 // 监听窗口大小变化
@@ -504,20 +577,43 @@ onMounted(() => {
 
 .news-detail-meta {
   display: flex;
-  gap: 24px;
+  flex-direction: column;
+  gap: 16px;
   color: #666;
   font-size: 0.9em;
   margin-bottom: 24px;
-  padding-bottom: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.meta-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 8px 0;
   border-bottom: 1px solid #eee;
+}
+
+.meta-group:last-child {
+  border-bottom: none;
+}
+
+.meta-label {
+  font-weight: bold;
+  color: #409EFF;
+  min-width: 80px;
 }
 
 .news-detail-content {
   white-space: pre-wrap;
   line-height: 1.8;
-  font-size: 1.4em;
+  font-size: 1.1em;
   color: #333;
-  overflow-y: auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
 /* 确保弹窗在页面最上层 */
