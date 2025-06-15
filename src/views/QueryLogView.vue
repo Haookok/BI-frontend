@@ -4,7 +4,6 @@
     <div class="main-content">
       <h1>查询日志列表</h1>
       <div class="search-bar-row">
-        <el-input v-model="searchQuery" placeholder="请输入ID查询" class="search-input" size="large" />
         <el-button 
           :type="isSortedByTime ? 'success' : 'primary'" 
           @click="toggleSort" 

@@ -64,16 +64,15 @@ function initChart() {
   chart = echarts.init(chartRef.value)
 
   option = {
-    title: { text: '用户新闻分类浏览趋势' },
+    title: { text: '' },
     tooltip: { trigger: 'axis' },
     legend: { data: [], type: 'scroll' },
     xAxis: {
-      type: 'category',
+      type: 'time',
       name: '时间',
-      data: [],
       axisLabel: {
         formatter: value => {
-          const date = new Date(value * 1000)
+          const date = new Date(value)
           const year = date.getFullYear()
           const month = String(date.getMonth() + 1).padStart(2, '0')
           const day = String(date.getDate()).padStart(2, '0')
@@ -167,7 +166,7 @@ function startMonitoring() {
         categorySeriesMap[category] = {
           name: category,
           type: 'bar',
-          data: Array(fullTimestamps.length).fill(0),
+          data: fullTimestamps.map(ts => [ts * 1000, 0]), // 转换为毫秒时间戳
           smooth: true,
           showSymbol: false,
           lineStyle: { width: 2 }
@@ -176,14 +175,11 @@ function startMonitoring() {
 
       const index = fullTimestamps.indexOf(timestamp)
       if (index !== -1) {
-        categorySeriesMap[category].data[index] = count
+        categorySeriesMap[category].data[index] = [timestamp * 1000, count] // 转换为毫秒时间戳
       }
     })
 
     chart.setOption({
-      xAxis: {
-        data: fullTimestamps
-      },
       series: Object.values(categorySeriesMap),
       legend: {
         data: Object.keys(categorySeriesMap)

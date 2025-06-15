@@ -25,7 +25,6 @@
                                 <span class="news-id">ID: {{ news.newsId }}</span>
                                 <span class="news-browse">总浏览量: {{ news.totalBrowseCount }}</span>
                                 <span class="news-duration">总浏览时长: {{ news.totalDuration }}s</span>
-                                <span class="news-avg-duration">平均浏览时长: {{ news.avgBrowseDuration ? news.avgBrowseDuration.toFixed(2) : '-' }}s</span>
                                 <span class="news-growth">增长率: {{ news.growthRate ?? '-' }}</span>
                                 <span class="news-heat">综合热度: {{ news.comprehensiveHeat ? news.comprehensiveHeat.toFixed(2) : '-' }}</span>
                             </div>
@@ -76,7 +75,6 @@
                 <span class="meta-label">浏览数据</span>
                 <span>总浏览量: {{ selectedNews?.totalBrowseCount || 0 }}</span>
                 <span>总浏览时长: {{ selectedNews?.totalDuration || 0 }}s</span>
-                <span>平均浏览时长: {{ selectedNews?.avgBrowseDuration ? selectedNews.avgBrowseDuration.toFixed(2) : '-' }}s</span>
             </div>
             <div class="meta-group">
                 <span class="meta-label">热度数据</span>

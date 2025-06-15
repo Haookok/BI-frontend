@@ -2,10 +2,17 @@
   <div class="home-layout">
     <Sidebar />
     <div class="main-content">
-      <h1>欢迎来到首页</h1>
-      <el-date-picker v-model="date" type="datetime" />
-      <div class="echarts-box">
-        <div id="myEcharts" :style="{ width: '900px', height: '300px' }"></div>
+      <div class="content-wrapper">
+        <h1>新闻实时动态变化分析系统</h1>
+        <div class="info-container">
+          <span>指导老师：朱宏明</span>
+          <span>2253092 代仲杰</span>
+          <span>2251639 郝明阳</span>
+          <span>2251657 李若冰</span>
+          <span>2253230 张正阳</span>
+          <span>前端仓库地址：<a href="https://github.com/Haookok/BI-frontend" target="_blank">https://github.com/Haookok/BI-frontend</a></span>
+          <span>后端仓库地址：<a href="https://github.com/Haookok/BusinessIntelligence" target="_blank">https://github.com/Haookok/BusinessIntelligence</a></span>
+        </div>
       </div>
     </div>
   </div>
@@ -13,53 +20,6 @@
 
 <script setup>
 import Sidebar from '@/components/Sidebar.vue'
-import { onMounted, onUnmounted } from 'vue'
-import * as echarts from 'echarts';
-
-let chartInstance = null;
-
-function resizeChart() {
-  if (chartInstance) {
-    chartInstance.resize();
-  }
-}
-
-function initEcharts() {
-  chartInstance = echarts.init(document.getElementById('myEcharts'));
-  chartInstance.setOption({
-    title: {
-      text: 'ECharts 入门示例'
-    },
-    xAxis: {
-      data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子']
-    },
-    tooltip: {
-      trigger: "axis"
-    },
-    yAxis: {
-      type: "value"
-    },
-    series: [
-      {
-        data: [820, 932, 901, 934, 1290, 1330, 1320, 801, 102, 230, 4321, 4129],
-        type: "line",
-        smooth: true
-      }
-    ]
-  });
-  window.addEventListener('resize', resizeChart);
-}
-
-onMounted(() => {
-  initEcharts();
-});
-onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.dispose();
-    chartInstance = null;
-  }
-  window.removeEventListener('resize', resizeChart);
-});
 
 </script>
 
@@ -75,8 +35,41 @@ onUnmounted(() => {
   background: #f5f6fa;
   padding: 32px;
   overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
+.content-wrapper {
+  text-align: center;
+}
+
 .main-content h1 {
   color: #000;
+  margin-bottom: 40px;
+  font-size: 48px;
+  font-weight: bold;
+}
+
+.info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.info-container span {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.info-container a {
+  color: #000000;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.info-container a:hover {
+  color: #66b1ff;
+  text-decoration: underline;
 }
 </style>

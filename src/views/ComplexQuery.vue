@@ -76,7 +76,6 @@
                     <el-button circle size="small" @click="nextPage" :disabled="pageNumber === totalPages">
                       <el-icon><ArrowRight /></el-icon>
                     </el-button>
-                    <span style="margin: 0 8px;">浏览总数：{{ response?.browseCount || 0 }}</span>
                   </div>
                   <div v-if="loading">正在发送请求...</div>
                   <div v-else-if="error" class="error">{{ error }}</div>
