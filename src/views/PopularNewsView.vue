@@ -12,7 +12,7 @@
                             <el-date-picker v-model="comprehensiveDate" type="date" 
                               format="YYYY/MM/DD"
                               value-format="YYYY-MM-DD"
-                              placeholder="选择截止时间" 
+                              placeholder="选择查询日期" 
                               style="width: 200px; height: 40px; margin-left: 16px;" />
                         </div>
                         <el-button type="primary" class="option-btn" @click="fetchData">查询热门新闻</el-button>
